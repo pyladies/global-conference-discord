@@ -103,6 +103,11 @@ to configure your existing Discord Server with the expected channels, roles and 
 
 Expected outcome: A Discord Server ready to be used for this bot.
 
+
+> ![WARNING]
+> You cannot test the Registration Cog as the owner user of the Discord Server.
+> You'll need to invite a new user to your server to test the registration flow. You can use the mock Pretix server from below.
+
 ### Pretix Integration
 
 This bot connects to a Pretix instance to obtain a list of valid tickets.
