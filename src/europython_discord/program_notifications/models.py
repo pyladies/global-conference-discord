@@ -40,7 +40,7 @@ class Session(BaseModel):
     tweet: str
     level: str
     track: str | None
-    youtube_url: str | None  # Add PyLadiesCon
+    youtube_url: str | None = None  # Add PyLadiesCon
     rooms: list[str]
     start: AwareDatetime
     website_url: str
