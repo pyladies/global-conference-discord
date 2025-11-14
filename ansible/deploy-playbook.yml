@@ -2,7 +2,7 @@
 - name: Deploy Discord Bot to the server
   hosts: all
   vars:
-    repository_url: https://github.com/EuroPython/discord.git
+    repository_url: https://github.com/pyladies/global-conference-discord.git
 
   tasks:
     - name: Enable persistent logging for journald
@@ -59,7 +59,7 @@
         force: yes
         accept_hostkey: yes
         single_branch: yes
-        version: main
+        version: "2025"
 
     - name: Ensure 'bot' group exists
       group:

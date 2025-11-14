@@ -38,7 +38,7 @@ def session() -> Session:
                 website_url="https://example.com/speaker2",
             ),
         ],
-        start="2024-07-10T08:00:00+00:00",
+        start=datetime.fromisoformat("2024-07-10T08:00:00+00:00"),
         title="Example Session",
         track=None,
         tweet="",
@@ -195,6 +195,7 @@ def test_embed_fields_livestream_empty(session: Session) -> None:
     assert embed.fields[4].value == _FIELD_VALUE_EMPTY
 
 
+@pytest.mark.skip(reason="Livestreams URLs were removed. PyladiesCon does not use them.")
 def test_embed_fields_livestream_url(session: Session) -> None:
     """Test the 'Livestream' field of the embed."""
     embed = session_to_embed.create_session_embed(session, "https://livestream.url")
