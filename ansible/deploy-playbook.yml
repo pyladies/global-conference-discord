@@ -64,14 +64,15 @@
     - name: Ensure 'bot' group exists
       group:
         name: bot
-        gid: 1000
+        state: present
 
-    - name: Create 'bot' user
+    - name: Ensure 'bot' user exists
       user:
         name: bot
-        uid: 1000
-        group: 1000
+        group: bot
         home: /home/bot
+        create_home: yes
+        shell: /usr/sbin/nologin
 
     - name: Create registration_log.txt in bot's home directory
       file:
@@ -101,5 +102,8 @@
         owner: bot
         group: bot
 
-    - name: Start Discord Bot
-      shell: "cd /root/discord && docker compose down && docker compose up --detach --build"
+    - name: Start Discord Bot via docker compose
+      shell: |
+        cd /root/discord
+        docker compose down
+        docker compose up --detach --build
