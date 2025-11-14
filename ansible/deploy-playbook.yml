@@ -65,6 +65,7 @@
       group:
         name: bot
         state: present
+        gid: 4242
 
     - name: Ensure 'bot' user exists
       user:
@@ -73,6 +74,7 @@
         home: /home/bot
         create_home: yes
         shell: /usr/sbin/nologin
+        uid: 4242
 
     - name: Create registration_log.txt in bot's home directory
       file:
