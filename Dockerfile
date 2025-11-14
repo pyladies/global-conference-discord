@@ -1,8 +1,8 @@
 FROM python:3.11.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 
-RUN groupadd --gid 1000 bot && \
-    useradd --uid 1000 --gid bot bot --create-home && \
+RUN groupadd bot && \
+    useradd --gid bot --create-home bot && \
     rm -rf /var/cache/* /var/log/*
 
 USER bot
