@@ -1,6 +1,6 @@
 services:
   EuroPythonBot:
-    image: europythonbot
+    image: pyladiescon
     build:
       context: .
     env_file:
@@ -32,7 +32,7 @@ services:
         read_only: false
 
     # read all container only logs with
-    # journalctl -u docker IMAGE_NAME=europythonbot -f
+    # journalctl -u docker IMAGE_NAME=pyladiescon -f
     logging:
       driver: journald
     restart: unless-stopped
