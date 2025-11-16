@@ -13,7 +13,7 @@ pretix_cache_file = "pretix_cache.json"
 [registration.item_to_roles]
 "Sponsors Ticket" = ["Participant", "Sponsor"]
 "Speaker Ticket" = ["Participant", "Speaker"]
-"General Ticket" = ["Participant"]
+"General Admission Ticket" = ["Participant"]
 
 [registration.variation_to_roles]
 "Volunteer" = ["Organizer", "Volunteer"]
