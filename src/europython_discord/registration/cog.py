@@ -211,7 +211,6 @@ class RegistrationCog(commands.Cog):
 
             Experiencing trouble? Please contact us
             * In the {reg_help_channel.mention} channel
-            * By speaking to a volunteer in a yellow t-shirt
 
             Enjoy our PyLadiesCon 2025 Community Server! :snake::computer::tada:
             """
