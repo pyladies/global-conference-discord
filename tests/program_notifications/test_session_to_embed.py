@@ -153,7 +153,7 @@ def test_embed_fields_room(session: Session) -> None:
     """Test the 'Room' field of the embed."""
     session.rooms = ["Exhibit Hall"]
     embed = session_to_embed.create_session_embed(session, None)
-    assert embed.fields[1].name == "Room"
+    assert embed.fields[1].name == "Stream"
     assert embed.fields[1].value == "Exhibit Hall"
 
 
@@ -161,7 +161,7 @@ def test_embed_fields_room_multiple(session: Session) -> None:
     """Test the 'Room' field of the embed with multiple rooms."""
     session.rooms = ["Exhibit Hall", "Forum Hall", "South Hall"]
     embed = session_to_embed.create_session_embed(session, None)
-    assert embed.fields[1].name == "Room"
+    assert embed.fields[1].name == "Stream"
     assert embed.fields[1].value == "Exhibit Hall, Forum Hall, South Hall"
 
 
