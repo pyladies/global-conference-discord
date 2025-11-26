@@ -243,7 +243,7 @@ class RegistrationCog(commands.Cog):
             "We apologize for the inconvenience and are working hard to fix the issue."
         )
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def fetch_pretix_updates(self) -> None:
         _logger.info("Starting the periodic pretix update...")
         try:
