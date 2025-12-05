@@ -31,6 +31,11 @@ services:
         target: /home/bot/pretix_cache.json
         read_only: false
 
+      - type: bind
+        source: /home/bot/youtube_urls.json
+        target: /home/bot/youtube_urls.json
+        read_only: false
+
     # read all container only logs with
     # journalctl -u docker IMAGE_NAME=pyladiescon -f
     logging:

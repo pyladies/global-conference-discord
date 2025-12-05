@@ -104,6 +104,13 @@
         owner: bot
         group: bot
 
+    - name: Create youtube_urls.json in bot's home directory
+      file:
+        path: /home/bot/youtube_urls.json
+        state: touch
+        owner: bot
+        group: bot
+
     - name: Start Discord Bot via docker compose
       shell: |
         cd /root/discord
