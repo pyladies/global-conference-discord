@@ -9,3 +9,4 @@ schedule_cache.json
 pretix_cache.json
 *.egg-info/
 livestreams.toml
+youtube_urls.json
