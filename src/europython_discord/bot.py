@@ -18,6 +18,8 @@ from europython_discord.program_notifications.cog import ProgramNotificationsCog
 from europython_discord.program_notifications.config import ProgramNotificationsConfig
 from europython_discord.registration.cog import RegistrationCog
 from europython_discord.registration.config import RegistrationConfig
+from europython_discord.tutorials.cog import TutorialsCog
+from europython_discord.tutorials.config import TutorialsConfig
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -36,6 +38,7 @@ class Config(BaseModel):
     registration: RegistrationConfig
     program_notifications: ProgramNotificationsConfig
     guild_statistics: GuildStatisticsConfig
+    tutorials: TutorialsConfig
 
 
 async def run_bot(config: Config, auth_token: str) -> None:
@@ -51,6 +54,7 @@ async def run_bot(config: Config, auth_token: str) -> None:
         await bot.add_cog(RegistrationCog(bot, config.registration))
         await bot.add_cog(ProgramNotificationsCog(bot, config.program_notifications))
         await bot.add_cog(GuildStatisticsCog(bot, config.guild_statistics))
+        await bot.add_cog(TutorialsCog(bot, config.tutorials))
 
         await bot.start(auth_token)
 

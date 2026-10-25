@@ -60,3 +60,8 @@ fast_mode = true
 
 [guild_statistics]
 required_role = "Organizers"
+
+[tutorials]
+registration_channel_name = "tutorials-registration"
+report_channel_name = "tutorials-report"
+tutorials_file = "tutorials.toml"
