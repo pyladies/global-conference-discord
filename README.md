@@ -173,7 +173,65 @@ uv remove [package]
 * Check code style: `ruff check .`
 * Run tests: `pytest`
 
-## Deployment
+## Deployment on cabotage
+
+The bot can run on [PSF cabotage](https://github.com/cabotage/cabotage-app), the platform that also
+hosts [pyladiescon-portal](https://github.com/pyladies/pyladiescon-portal).
+Cabotage builds the [`Dockerfile`](./Dockerfile) and runs each [`Procfile`](./Procfile) line as its
+own process. The bot is a single long-running worker with no HTTP server, so the whole deployment is
+the one line in `Procfile`:
+
+```
+worker-bot: run-bot --config-file prod-config.toml
+```
+
+The `worker` name prefix matters: cabotage gives `web*` processes a TLS sidecar and expects them to
+serve traffic, `job*` processes require a cron `SCHEDULE`, and `release*`/`postdeploy*` run once per
+deploy. `worker*` is the plain long-running shape.
+
+### One-time setup
+
+1. Ask PSF infrastructure to create the project/application on
+   [cabotage](https://cabotage.us-east-2.psfhosted.computer/) and install the cabotage GitHub App on
+   this repository.
+2. In the cabotage application, set the two secrets as environment variables: `DISCORD_BOT_TOKEN`
+   and `PRETIX_TOKEN`. No `.secrets` file exists in the container.
+3. Set the auto-deploy branch to `main`. Every merge to `main` then builds and deploys automatically.
+4. **After the first deploy, scale `worker-bot` to exactly 1 replica.** New processes start at zero
+   replicas and cabotage never scales them on its own, so the first deploy reports success without
+   running the bot. Keep it at one replica: two bots would double-post notifications and race on
+   registration.
+5. In the [Discord Developer Portal](https://discord.com/developers/applications), under Bot >
+   Privileged Gateway Intents, enable **Server Members Intent** and **Message Content Intent**. The
+   bot requests both and will not connect without them.
+
+### Runtime constraints on cabotage
+
+* Processes run as `nobody` with only `/tmp` writable. All cache files in `prod-config.toml`
+  (`registered_log.txt`, `pretix_cache.json`, `schedule_cache.json`) point at `/tmp` for that reason;
+  do not change them back to relative paths.
+* **State is ephemeral.** `/tmp` is wiped on every deploy or restart. The Pretix and schedule caches
+  rebuild themselves from the APIs. The registered-tickets log resets, which removes the
+  cross-restart guard against one ticket being redeemed twice; a future improvement is to rebuild it
+  from the registration log channel at startup.
+* Configuration is the committed `prod-config.toml` baked into the image, together with
+  `livestreams.toml` and any other runtime `*.toml` file in the repository root (`test-*.toml` files
+  are excluded). Changing any of them means a merge to `main` and the automatic redeploy that follows.
+  Channel and role names are not secrets.
+
+### Running locally with Docker
+
+```shell
+docker build --tag europython-discord .
+docker run --rm \
+    --env DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN \
+    --env PRETIX_TOKEN=$PRETIX_TOKEN \
+    europython-discord
+```
+
+The image runs as `nobody` and writes state to `/tmp`, mirroring the cabotage runtime.
+
+## Deployment on a VPS (Ansible)
 
 For the EuroPython conference, this bot is deployed on a VPS.
 It uses Ansible to configure the VPS, and Docker Compose to run the bot.

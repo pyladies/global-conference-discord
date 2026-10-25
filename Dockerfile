@@ -1,16 +1,27 @@
-FROM python:3.11.12-slim
+FROM python:3.11-slim
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 
-RUN groupadd --gid 1000 bot && \
-    useradd --uid 1000 --gid bot bot --create-home && \
-    rm -rf /var/cache/* /var/log/*
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy
 
-USER bot
-WORKDIR /home/bot
+WORKDIR /app
 
-COPY --chown=bot:bot pyproject.toml uv.lock ./
-COPY --chown=bot:bot src ./src
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY src ./src
+RUN uv sync --frozen --no-dev --no-editable
 
-RUN uv sync
+ENV PATH="/app/.venv/bin:$PATH"
 
-ENTRYPOINT ["uv", "run", "run-bot", "--config-file", "prod-config.toml"]
+# prod-config.toml, livestreams.toml and any other runtime .toml (test-*.toml are
+# excluded by .dockerignore)
+COPY *.toml ./
+
+# Cabotage's release image layers its own entrypoint over this one and runs
+# the Procfile command as `nobody`, with only /tmp writable; every runtime
+# state path in prod-config.toml therefore points at /tmp. USER and CMD here
+# only matter for running the image locally, where they mirror that environment.
+USER nobody
+CMD ["run-bot", "--config-file", "prod-config.toml"]
