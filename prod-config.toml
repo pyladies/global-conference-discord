@@ -60,3 +60,8 @@ main_notification_channel_name = "programme-notifications"
 
 [guild_statistics]
 required_role = "Organizers"
+
+[tutorials]
+registration_channel_name = "tutorials-registration"
+report_channel_name = "tutorials-report"
+tutorials_file = "tutorials.toml"

@@ -15,6 +15,7 @@ The bot has the following extensions ("Cogs"):
 * Guild Statistics: As an organizer, write `$participants` in an organizer-only channel. The bot will respond with a list of roles, and the number of members per role.
 * Registration: On startup, the bot posts a registration form. New users must register using their Pretix ticket data. On success, the bot assigns the appropriate roles.
 * Programme Notifications: Before each session, the bot posts a session summary and updates the livestream URLs.
+* Tutorials: In the tutorials registration channel, participants register for (and unregister from) the tutorials listed in [`tutorials.toml`](./tutorials.toml). The tutorials report channel lists the registered participants per tutorial; the bot stores the registrations in those messages, so they must not be edited or deleted.
 
 ## Screenshots
 ### Registration Channel:
@@ -245,6 +246,7 @@ Related files:
     * [Dockerfile](./Dockerfile): Docker container recipe
     * [compose.yaml](./compose.yaml): Docker Compose recipe
     * [prod-config.toml](./prod-config.toml): Prod bot configuration
+    * [tutorials.toml](./tutorials.toml): Tutorials configuration
 * On the VPS:
     * NOTE: Read-only files are in `/root`, Cache files created by the bot are in `/home/bot`
     * `/root/.secrets`: Contains `DISCORD_BOT_TOKEN` and `PRETIX_TOKEN`

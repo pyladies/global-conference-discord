@@ -1,0 +1,78 @@
+# Tutorials users can register for in the tutorials registration channel.
+#
+# - `id`: unique and stable (registrations are stored under it, don't change it
+#   once people started registering)
+# - `date`: TOML datetime *with* UTC offset; it is shown to every user in their
+#   own local timezone
+# - Entries are displayed in chronological order, regardless of the order here
+# - `title` is limited to 100 characters (Discord select menu limit)
+
+[[tutorial]]
+id = "intro-to-asyncio"
+title = "Placeholder: Introduction to asyncio"
+presenters = ["Presenter One"]
+date = 2026-10-26T10:00:00+00:00
+url = "https://example.com/tutorials/intro-to-asyncio"
+
+[[tutorial]]
+id = "testing-with-pytest"
+title = "Placeholder: Testing with pytest"
+presenters = ["Presenter Two", "Presenter Three"]
+date = 2026-10-26T14:00:00+00:00
+url = "https://example.com/tutorials/testing-with-pytest"
+
+[[tutorial]]
+id = "data-viz"
+title = "Placeholder: Data visualisation in Python"
+presenters = ["Presenter Four"]
+date = 2026-10-27T10:00:00+00:00
+url = "https://example.com/tutorials/data-viz"
+
+[[tutorial]]
+id = "cli-typer"
+title = "Placeholder: Building CLI tools with Typer"
+presenters = ["Presenter 5"]
+date = 2026-10-27T14:00:00+00:00
+url = "https://example.com/tutorials/cli-typer"
+
+[[tutorial]]
+id = "packaging-pypi"
+title = "Placeholder: Packaging and publishing to PyPI"
+presenters = ["Presenter 6"]
+date = 2026-10-28T10:00:00+00:00
+url = "https://example.com/tutorials/packaging-pypi"
+
+[[tutorial]]
+id = "sklearn-intro"
+title = "Placeholder: Intro to machine learning with scikit-learn"
+presenters = ["Presenter 7"]
+date = 2026-10-28T14:00:00+00:00
+url = "https://example.com/tutorials/sklearn-intro"
+
+[[tutorial]]
+id = "fastapi"
+title = "Placeholder: Web APIs with FastAPI"
+presenters = ["Presenter 8"]
+date = 2026-10-29T10:00:00+00:00
+url = "https://example.com/tutorials/fastapi"
+
+[[tutorial]]
+id = "type-hints"
+title = "Placeholder: Type hints in practice"
+presenters = ["Presenter 9"]
+date = 2026-10-29T14:00:00+00:00
+url = "https://example.com/tutorials/type-hints"
+
+[[tutorial]]
+id = "profiling"
+title = "Placeholder: Profiling and speeding up Python code"
+presenters = ["Presenter 10"]
+date = 2026-10-30T10:00:00+00:00
+url = "https://example.com/tutorials/profiling"
+
+[[tutorial]]
+id = "oss-contribution"
+title = "Placeholder: Open source contribution workshop"
+presenters = ["Presenter 11"]
+date = 2026-10-30T14:00:00+00:00
+url = "https://example.com/tutorials/oss-contribution"

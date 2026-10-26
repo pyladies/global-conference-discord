@@ -12,6 +12,11 @@ services:
         read_only: true
 
       - type: bind
+        source: tutorials.toml
+        target: /home/bot/tutorials.toml
+        read_only: true
+
+      - type: bind
         source: /root/livestreams.toml
         target: /home/bot/livestreams.toml
         read_only: true
