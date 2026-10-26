@@ -7,8 +7,8 @@ registration_log_channel_name = "registration-log"
 
 pretix_base_url = "https://pretix.eu/api/v1/organizers/europython/events/ep2025"
 
-registered_cache_file = "registered_log.txt"
-pretix_cache_file = "pretix_cache.json"
+registered_cache_file = "/tmp/registered_log.txt"
+pretix_cache_file = "/tmp/pretix_cache.json"
 
 [registration.item_to_roles]
 # onsite participants
@@ -38,7 +38,7 @@ pretix_cache_file = "pretix_cache.json"
 [program_notifications]
 # UTC offset in hours (e.g. 2 for CEST)
 api_url = "https://static.europython.eu/programme/ep2025/releases/current/schedule.json"
-schedule_cache_file = "schedule_cache.json"
+schedule_cache_file = "/tmp/schedule_cache.json"
 livestream_url_file = "livestreams.toml"
 main_notification_channel_name = "programme-notifications"
 
