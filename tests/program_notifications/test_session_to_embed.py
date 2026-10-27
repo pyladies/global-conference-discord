@@ -38,7 +38,7 @@ def session() -> Session:
                 website_url="https://example.com/speaker2",
             ),
         ],
-        start="2024-07-10T08:00:00+00:00",
+        start=datetime.fromisoformat("2024-07-10T08:00:00+00:00"),
         title="Example Session",
         track=None,
         tweet="",
@@ -153,7 +153,7 @@ def test_embed_fields_room(session: Session) -> None:
     """Test the 'Room' field of the embed."""
     session.rooms = ["Exhibit Hall"]
     embed = session_to_embed.create_session_embed(session, None)
-    assert embed.fields[1].name == "Room"
+    assert embed.fields[1].name == "Stream"
     assert embed.fields[1].value == "Exhibit Hall"
 
 
@@ -161,7 +161,7 @@ def test_embed_fields_room_multiple(session: Session) -> None:
     """Test the 'Room' field of the embed with multiple rooms."""
     session.rooms = ["Exhibit Hall", "Forum Hall", "South Hall"]
     embed = session_to_embed.create_session_embed(session, None)
-    assert embed.fields[1].name == "Room"
+    assert embed.fields[1].name == "Stream"
     assert embed.fields[1].value == "Exhibit Hall, Forum Hall, South Hall"
 
 
@@ -195,6 +195,7 @@ def test_embed_fields_livestream_empty(session: Session) -> None:
     assert embed.fields[4].value == _FIELD_VALUE_EMPTY
 
 
+@pytest.mark.skip(reason="Livestreams URLs were removed. PyladiesCon does not use them.")
 def test_embed_fields_livestream_url(session: Session) -> None:
     """Test the 'Livestream' field of the embed."""
     embed = session_to_embed.create_session_embed(session, "https://livestream.url")
