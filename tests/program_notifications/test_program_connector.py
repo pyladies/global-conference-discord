@@ -26,6 +26,20 @@ def cache_file(tmp_path):
 
 
 @pytest.fixture
+def mock_youtube_urls_file(tmp_path):
+    youtube_mappings = {
+        "TZWRJN": "https://www.youtube.com/watch?v=test-announcement",
+        "8FY9BC": "https://www.youtube.com/watch?v=test-keynote",
+    }
+    youtube_config_file = tmp_path / "youtube_urls.json"
+
+    with Path.open(youtube_config_file, "w") as f:
+        f.write(json.dumps(youtube_mappings))
+
+    return youtube_config_file
+
+
+@pytest.fixture
 async def program_connector(cache_file):
     return ProgramConnector(api_url="http://test.api/schedule", cache_file=cache_file)
 
@@ -205,3 +219,33 @@ async def test_get_now_without_simulation(program_connector):
     await asyncio.sleep(0.001)
 
     assert datetime.now(tz=UTC) > now
+
+
+@pytest.mark.asyncio
+async def test_enhance_schedule_with_youtube_urls(
+    program_connector, mock_schedule, mock_youtube_urls_file
+):
+    program_connector._youtube_config_file = mock_youtube_urls_file
+
+    # Enhance the schedule
+    enhanced_schedule = await program_connector._enhance_schedule_with_youtube_urls(mock_schedule)
+    sessions_by_day = await program_connector.parse_schedule(enhanced_schedule)
+
+    # Check that the YouTube URLs have been added correctly
+    july_10_sessions = sessions_by_day[date(2024, 7, 10)]
+    assert july_10_sessions[0].youtube_url == "https://www.youtube.com/watch?v=test-announcement"
+    assert july_10_sessions[1].youtube_url is None
+
+
+@pytest.mark.asyncio
+async def test_enhance_schedule_with_youtube_urls_no_config(program_connector, mock_schedule):
+    program_connector._youtube_config_file = Path("non_existent_file.json")
+
+    # Enhance the schedule
+    enhanced_schedule = await program_connector._enhance_schedule_with_youtube_urls(mock_schedule)
+    sessions_by_day = await program_connector.parse_schedule(enhanced_schedule)
+
+    # Check that no YouTube URLs have been added
+    for day_sessions in sessions_by_day.values():
+        for session in day_sessions:
+            assert session.youtube_url is None

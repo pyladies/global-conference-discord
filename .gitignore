@@ -8,3 +8,4 @@ registered_log.txt
 schedule_cache.json
 pretix_cache.json
 *.egg-info/
+youtube_urls.json
