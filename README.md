@@ -35,6 +35,13 @@ Arguments and environment variables:
 * Argument `--config-file`: Path to .toml configuration file
 * Environment variable `DISCORD_BOT_TOKEN`: Discord bot auth token (with Admin and `GUILD_MEMBERS` privileges)
 * Environment variable `PRETIX_TOKEN`: Pretix access token (preferably read-only)
+* Environment variable `PORTAL_CONFERENCE`: Conference slug on the PyLadiesCon portal, such as
+  `pyladiescon-2026`. The bot reads the program from `<api_base_url>/<slug>/sessions/` and posts
+  each session in its room's Discord channel, taken from the room's Discord id in the portal admin.
+  Without it, program notifications are off.
+* Environment variable `PROGRAM_REFRESH_MINUTES` (optional, default `1`): Minutes between fetches of
+  the program from the portal. A change in the portal admin, such as a room's Discord id, reaches the
+  bot within this time.
 
 Included example configuration files:
 
@@ -45,7 +52,7 @@ Cache files (will be created if necessary):
 
 * `registered_log.txt`: List of registered users
 * `pretix_cache.json`: Local cache of Pretix ticket data
-* `schedule_cache.json`: Local cache of [programapi](https://github.com/europython/programapi) schedule
+* `schedule_cache.json`: Local cache of the portal's program
 
 ## Usage
 
@@ -65,6 +72,7 @@ pip install .
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 run-bot --config-file your-config-file.toml
@@ -79,6 +87,7 @@ uv sync
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 uv run run-bot --config-file your-config-file.toml
@@ -137,6 +146,7 @@ To run the bot, use the following:
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 run-bot --config your-config-file.toml
@@ -200,7 +210,8 @@ deploy. `worker*` is the plain long-running shape.
    [cabotage](https://cabotage.us-east-2.psfhosted.computer/) and install the cabotage GitHub App on
    this repository.
 2. In the cabotage application, set the two secrets as environment variables: `DISCORD_BOT_TOKEN`
-   and `PRETIX_TOKEN`. No `.secrets` file exists in the container.
+   and `PRETIX_TOKEN`, plus `PORTAL_CONFERENCE` for the year's conference slug. No `.secrets` file
+   exists in the container.
 3. Set the auto-deploy branch to `main`. Every merge to `main` then builds and deploys automatically.
 4. **After the first deploy, scale `worker-bot` to exactly 1 replica.** New processes start at zero
    replicas and cabotage never scales them on its own, so the first deploy reports success without
@@ -231,6 +242,7 @@ docker build --tag europython-discord .
 docker run --rm \
     --env DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN \
     --env PRETIX_TOKEN=$PRETIX_TOKEN \
+    --env PORTAL_CONFERENCE=$PORTAL_CONFERENCE \
     europython-discord
 ```
 
@@ -252,7 +264,7 @@ Related files:
     * [prod-config.toml](./prod-config.toml): Prod bot configuration
 * On the VPS:
     * NOTE: Read-only files are in `/root`, Cache files created by the bot are in `/home/bot`
-    * `/root/.secrets`: Contains `DISCORD_BOT_TOKEN` and `PRETIX_TOKEN`
+    * `/root/.secrets`: Contains `DISCORD_BOT_TOKEN`, `PRETIX_TOKEN` and `PORTAL_CONFERENCE`
     * `/root/livestreams.toml`: Livestream URL configuration
     * `/home/bot/registered_log.txt`: Registration log
     * `/home/bot/pretix_cache.json`: Pretix cache

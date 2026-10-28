@@ -8,6 +8,7 @@ from discord.utils import get as discord_get
 
 from europython_discord.program_notifications import session_to_embed
 from europython_discord.program_notifications.config import ProgramNotificationsConfig
+from europython_discord.program_notifications.models import Room, Session
 #from europython_discord.program_notifications.livestream_connector import LivestreamConnector
 from europython_discord.program_notifications.program_connector import ProgramConnector
 
@@ -15,11 +16,18 @@ _logger = logging.getLogger(__name__)
 
 
 class ProgramNotificationsCog(commands.Cog):
-    def __init__(self, bot: Client, config: ProgramNotificationsConfig) -> None:
+    def __init__(
+        self,
+        bot: Client,
+        config: ProgramNotificationsConfig,
+        conference: str,
+        refresh_minutes: float = 1,
+    ) -> None:
         self.bot = bot
         self.config = config
+        self.refresh_minutes = refresh_minutes
         self.program_connector = ProgramConnector(
-            api_url=self.config.api_url,
+            api_url=f"{self.config.api_base_url.rstrip('/')}/{conference}/sessions/",
             cache_file=self.config.schedule_cache_file,
             simulated_start_time=self.config.simulated_start_time,
             fast_mode=self.config.fast_mode,
@@ -47,6 +55,7 @@ class ProgramNotificationsCog(commands.Cog):
         _logger.info(
             "Starting the schedule updater and setting the interval for the session notifier..."
         )
+        self.fetch_schedule.change_interval(minutes=self.refresh_minutes)
         self.fetch_schedule.start()
         #self.fetch_livestreams.start()
         self.notify_sessions.change_interval(
@@ -61,7 +70,7 @@ class ProgramNotificationsCog(commands.Cog):
         self.notify_sessions.stop()
         _logger.info("Stopped the schedule updater and the session notifier")
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def fetch_schedule(self) -> None:
         _logger.info("Starting the periodic schedule update...")
         await self.program_connector.fetch_schedule()
@@ -77,10 +86,8 @@ class ProgramNotificationsCog(commands.Cog):
         # determine sessions to send notifications for
         sessions_to_notify = []
         for session in await self.program_connector.get_upcoming_sessions():
-            if session in self.notified_sessions:
+            if session.key in self.notified_sessions:
                 continue  # already notified
-            if len(session.rooms) > 1:
-                continue  # announcement or coffee/lunch break
             sessions_to_notify.append(session)
 
         if not sessions_to_notify:
@@ -92,42 +99,63 @@ class ProgramNotificationsCog(commands.Cog):
         await main_notification_channel.send(content="# Sessions starting in 5 minutes:")
 
         for session in sessions_to_notify:
-            room_name = session.rooms[0]
-            room_channel = self._get_room_channel(room_name)
+            # a session without a room, such as a keynote, is in every room
+            rooms = [session.room] if session.room else self.program_connector.get_rooms()
+            room_label = session.room.name if session.room else "all rooms"
 
             # update room's livestream URL
             #livestream_url = await self.livestream_connector.get_livestream_url(
             #    room_name, session.start.date()
             #)
             #embed = session_to_embed.create_session_embed(session, livestream_url)
-            embed = session_to_embed.create_session_embed(session, None)
-
+            embed = session_to_embed.create_session_embed(session, self._session_url(session))
 
             await main_notification_channel.send(embed=embed)
-            if room_channel is not None:
+            for room in rooms:
+                room_channel = self._get_room_channel(room)
+                if room_channel is None:
+                    continue
                 #await room_channel.edit(
                 #    topic=f"Livestream: [YouTube]({livestream_url})" if livestream_url else ""
                 #)
                 await room_channel.send(
-                    content=f"# Starting in 5 minutes @ {session.rooms[0]}",
+                    content=f"# Starting in 5 minutes @ {room_label}",
                     embed=embed,
                 )
 
             # send session notification message to room and main channel
 
-            self.notified_sessions.add(session)
+            self.notified_sessions.add(session.key)
 
     async def purge_all_room_channels(self) -> None:
         _logger.info("Purging all room channels...")
-        for channel_name in self.config.rooms_to_channel_names.values():
-            channel = discord_get(self.bot.get_all_channels(), name=channel_name)
-            await channel.purge()
+        if self.program_connector.sessions_by_day is None:
+            await self.program_connector.fetch_schedule()
+        for room in self.program_connector.get_rooms():
+            channel = self._get_room_channel(room)
+            if channel is not None:
+                await channel.purge()
         _logger.info("Purged all room channels.")
 
-    def _get_room_channel(self, room_name: str) -> TextChannel | None:
-        channel_name = self.config.rooms_to_channel_names.get(room_name)
-        if channel_name is None:
-            _logger.warning(f"No notification channel configured for room {room_name!r}")
+    def _get_room_channel(self, room: Room) -> TextChannel | None:
+        if not room.discord_id:
+            _logger.warning(f"No Discord channel id set for room {room.name!r}")
             return None
 
-        return discord_get(self.bot.get_all_channels(), name=channel_name)
+        try:
+            channel_id = int(room.discord_id)
+        except ValueError:
+            _logger.warning(
+                f"Discord id {room.discord_id!r} for room {room.name!r} is not a number"
+            )
+            return None
+
+        channel = self.bot.get_channel(channel_id)
+        if channel is None:
+            _logger.warning(f"Discord channel {room.discord_id} for room {room.name!r} not found")
+        return channel
+
+    def _session_url(self, session: Session) -> str | None:
+        if self.config.session_url is None:
+            return None
+        return self.config.session_url.format(slug=session.slug)
