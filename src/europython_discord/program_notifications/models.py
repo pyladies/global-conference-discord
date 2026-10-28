@@ -71,5 +71,7 @@ class Session(BaseModel):
             return self.duration_minutes
         return (self.slot.end - self.slot.start) // timedelta(minutes=1)
 
-    def __hash__(self) -> int:
-        return hash(self.slug + str(self.start))
+    @property
+    def key(self) -> tuple[str, AwareDatetime]:
+        """Identifies a session's slot, unchanged by edits to its other fields."""
+        return (self.slug, self.start)

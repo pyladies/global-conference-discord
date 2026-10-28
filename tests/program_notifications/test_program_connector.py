@@ -224,3 +224,78 @@ async def test_get_now_without_simulation(program_connector):
     await asyncio.sleep(0.001)
 
     assert datetime.now(tz=UTC) > now
+
+
+@pytest.mark.asyncio
+async def test_get_upcoming_sessions_across_midnight(program_connector, mock_schedule):
+    midnight = {
+        **mock_schedule["sessions"][2],
+        "slug": "midnight-talk",
+        "title": "Midnight Talk",
+        "slot": {
+            "start": "2026-11-08T00:00:00Z",
+            "end": "2026-11-08T00:30:00Z",
+            "room": mock_schedule["sessions"][2]["slot"]["room"],
+        },
+    }
+    mock_schedule["sessions"].append(midnight)
+    program_connector.sessions_by_day = await program_connector.parse_schedule(mock_schedule)
+
+    program_connector._simulated_start_time = datetime(2026, 11, 7, 23, 57, 0, tzinfo=UTC)
+    program_connector._real_start_time = datetime.now(tz=UTC)
+    program_connector._time_multiplier = 1
+
+    upcoming_sessions = await program_connector.get_upcoming_sessions()
+    assert [session.title for session in upcoming_sessions] == ["Midnight Talk"]
+
+
+@pytest.mark.asyncio
+async def test_fetch_schedule_invalid_payload_keeps_schedule(
+    program_connector, mock_schedule_url, cache_file, mock_schedule, aiohttp_client,
+    unused_tcp_port_factory,
+):
+    program_connector._api_url = mock_schedule_url
+    await program_connector.fetch_schedule()
+    loaded = program_connector.sessions_by_day
+
+    async def bad_api_handler(request):  # noqa: ARG001 (unused argument)
+        return web.json_response({"sessions": [{"slug": "x"}]})
+
+    app = web.Application()
+    app.router.add_get("/schedule", bad_api_handler)
+    client = await aiohttp_client(TestServer(app, port=unused_tcp_port_factory()))
+    program_connector._api_url = str(client.make_url("/schedule"))
+
+    await program_connector.fetch_schedule()
+
+    assert program_connector.sessions_by_day is loaded
+    async with aiofiles.open(cache_file) as f:
+        assert json.loads(await f.read()) == mock_schedule
+
+
+@pytest.mark.asyncio
+async def test_fetch_schedule_invalid_json_falls_back_to_cache(
+    program_connector, cache_file, mock_schedule, aiohttp_client, unused_tcp_port_factory
+):
+    async with aiofiles.open(cache_file, "w") as f:
+        await f.write(json.dumps(mock_schedule))
+
+    async def bad_api_handler(request):  # noqa: ARG001 (unused argument)
+        return web.Response(text="not json", content_type="application/json")
+
+    app = web.Application()
+    app.router.add_get("/schedule", bad_api_handler)
+    client = await aiohttp_client(TestServer(app, port=unused_tcp_port_factory()))
+    program_connector._api_url = str(client.make_url("/schedule"))
+
+    await program_connector.fetch_schedule()
+
+    assert len(program_connector.sessions_by_day[date(2026, 11, 7)]) == 3
+
+
+@pytest.mark.asyncio
+async def test_get_schedule_from_unreadable_cache(program_connector, cache_file):
+    async with aiofiles.open(cache_file, "w") as f:
+        await f.write(json.dumps({"days": {}}))
+
+    assert await program_connector._get_schedule_from_cache() is None

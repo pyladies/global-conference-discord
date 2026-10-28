@@ -86,7 +86,7 @@ class ProgramNotificationsCog(commands.Cog):
         # determine sessions to send notifications for
         sessions_to_notify = []
         for session in await self.program_connector.get_upcoming_sessions():
-            if session in self.notified_sessions:
+            if session.key in self.notified_sessions:
                 continue  # already notified
             sessions_to_notify.append(session)
 
@@ -125,7 +125,7 @@ class ProgramNotificationsCog(commands.Cog):
 
             # send session notification message to room and main channel
 
-            self.notified_sessions.add(session)
+            self.notified_sessions.add(session.key)
 
     async def purge_all_room_channels(self) -> None:
         _logger.info("Purging all room channels...")
@@ -142,7 +142,13 @@ class ProgramNotificationsCog(commands.Cog):
             _logger.warning(f"No Discord channel id set for room {room.name!r}")
             return None
 
-        channel = self.bot.get_channel(int(room.discord_id))
+        try:
+            channel_id = int(room.discord_id)
+        except ValueError:
+            _logger.warning(f"Discord id {room.discord_id!r} for room {room.name!r} is not a number")
+            return None
+
+        channel = self.bot.get_channel(channel_id)
         if channel is None:
             _logger.warning(f"Discord channel {room.discord_id} for room {room.name!r} not found")
         return channel

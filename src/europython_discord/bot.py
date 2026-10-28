@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import math
 import os
 import sys
 from pathlib import Path
@@ -73,7 +74,7 @@ def _program_refresh_minutes() -> float:
         minutes = float(value)
     except ValueError:
         minutes = 0
-    if minutes <= 0:
+    if not math.isfinite(minutes) or minutes <= 0:
         raise RuntimeError(
             "Environment variable 'PROGRAM_REFRESH_MINUTES' must be a positive number, "
             f"not {value!r}"

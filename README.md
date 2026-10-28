@@ -72,6 +72,7 @@ pip install .
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 run-bot --config-file your-config-file.toml
@@ -86,6 +87,7 @@ uv sync
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 uv run run-bot --config-file your-config-file.toml
@@ -144,6 +146,7 @@ To run the bot, use the following:
 # set environment variables
 export DISCORD_BOT_TOKEN=...  # Windows: $env:DISCORD_BOT_TOKEN = '...'
 export PRETIX_TOKEN=...  # Windows: $env:PRETIX_TOKEN = '...'
+export PORTAL_CONFERENCE=pyladiescon-2026  # Windows: $env:PORTAL_CONFERENCE = 'pyladiescon-2026'
 
 # run the bot with a given config file
 run-bot --config your-config-file.toml
@@ -239,6 +242,7 @@ docker build --tag europython-discord .
 docker run --rm \
     --env DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN \
     --env PRETIX_TOKEN=$PRETIX_TOKEN \
+    --env PORTAL_CONFERENCE=$PORTAL_CONFERENCE \
     europython-discord
 ```
 
@@ -260,7 +264,7 @@ Related files:
     * [prod-config.toml](./prod-config.toml): Prod bot configuration
 * On the VPS:
     * NOTE: Read-only files are in `/root`, Cache files created by the bot are in `/home/bot`
-    * `/root/.secrets`: Contains `DISCORD_BOT_TOKEN` and `PRETIX_TOKEN`
+    * `/root/.secrets`: Contains `DISCORD_BOT_TOKEN`, `PRETIX_TOKEN` and `PORTAL_CONFERENCE`
     * `/root/livestreams.toml`: Livestream URL configuration
     * `/home/bot/registered_log.txt`: Registration log
     * `/home/bot/pretix_cache.json`: Pretix cache

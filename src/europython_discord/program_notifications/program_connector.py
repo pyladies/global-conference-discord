@@ -70,8 +70,11 @@ class ProgramConnector:
                 ):
                     response.raise_for_status()
                     schedule = await response.json()
+                # parse before writing, so a payload the bot cannot read never replaces the cache
+                sessions_by_day = await self.parse_schedule(schedule)
 
-            except aiohttp.ClientError as e:
+            # ValueError covers invalid JSON and a payload that fails validation
+            except (aiohttp.ClientError, ValueError) as e:
                 _logger.warning(f"Error fetching schedule: {e}.")
 
                 if self.sessions_by_day is not None:
@@ -91,7 +94,7 @@ class ProgramConnector:
                 await f.write(json.dumps(schedule, indent=2))
             _logger.info("Schedule written to cache file.")
 
-            self.sessions_by_day = await self.parse_schedule(schedule)
+            self.sessions_by_day = sessions_by_day
             _logger.info("Schedule parsed and loaded.")
 
     async def _get_schedule_from_cache(self) -> dict[date, list[Session]] | None:
@@ -105,6 +108,8 @@ class ProgramConnector:
 
         except FileNotFoundError:
             _logger.exception("Schedule cache file not found and no schedule is already loaded.")
+        except ValueError:
+            _logger.exception("Schedule cache file cannot be read and no schedule is loaded.")
         return None
 
     async def _get_now(self) -> datetime:
@@ -142,6 +147,10 @@ class ProgramConnector:
             _logger.debug(f"Simulated time now: {now}")
 
         sessions = await self.get_sessions_by_date(now.date())
+        # in the last minutes of a UTC day, the next sessions are on the next day
+        soon = (now + timedelta(minutes=5)).date()
+        if soon != now.date():
+            sessions = sessions + await self.get_sessions_by_date(soon)
 
         return [
             session for session in sessions if now < session.start <= now + timedelta(minutes=5)
