@@ -145,7 +145,9 @@ class ProgramNotificationsCog(commands.Cog):
         try:
             channel_id = int(room.discord_id)
         except ValueError:
-            _logger.warning(f"Discord id {room.discord_id!r} for room {room.name!r} is not a number")
+            _logger.warning(
+                f"Discord id {room.discord_id!r} for room {room.name!r} is not a number"
+            )
             return None
 
         channel = self.bot.get_channel(channel_id)

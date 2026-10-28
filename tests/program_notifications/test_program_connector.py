@@ -250,8 +250,12 @@ async def test_get_upcoming_sessions_across_midnight(program_connector, mock_sch
 
 
 @pytest.mark.asyncio
-async def test_fetch_schedule_invalid_payload_keeps_schedule(
-    program_connector, mock_schedule_url, cache_file, mock_schedule, aiohttp_client,
+async def test_fetch_schedule_invalid_payload_keeps_schedule(  # noqa: PLR0913
+    program_connector,
+    mock_schedule_url,
+    cache_file,
+    mock_schedule,
+    aiohttp_client,
     unused_tcp_port_factory,
 ):
     program_connector._api_url = mock_schedule_url
