@@ -9,7 +9,7 @@ from pathlib import Path
 import aiofiles
 import aiohttp
 
-from europython_discord.program_notifications.models import Break, Schedule, Session
+from europython_discord.program_notifications.models import Program, Room, Session
 
 _logger = logging.getLogger(__name__)
 
@@ -25,7 +25,6 @@ class ProgramConnector:
     ) -> None:
         self._api_url = api_url
         self._cache_file = cache_file
-        self._youtube_config_file = cache_file.parent / "youtube_urls.json"
 
         # time travel parameters for testing
         self._simulated_start_time = simulated_start_time
@@ -37,61 +36,32 @@ class ProgramConnector:
         self.sessions_by_day: dict[date, list[Session]] | None = None
 
     async def parse_schedule(self, schedule: dict) -> dict[date, list[Session]]:
-        """Parse the schedule data and return a dictionary with the sessions grouped by date."""
-        schedule: Schedule = Schedule.model_validate(schedule)
+        """Parse the portal's sessions and return them grouped by their UTC date.
+
+        Breaks and other non-content slots are left out.
+        """
+        program: Program = Program.model_validate(schedule)
 
         sessions_by_day = {}
-        for day, day_schedule in schedule.days.items():
-            sessions = []
-            for event in day_schedule.events:
-                if isinstance(event, Break):
-                    continue
-                sessions.append(event)
-            sessions_by_day[day] = sessions
+        for session in program.sessions:
+            if not session.is_content:
+                continue
+            day = session.start.astimezone(UTC).date()
+            sessions_by_day.setdefault(day, []).append(session)
 
         return sessions_by_day
 
-    async def _load_youtube_url_mappings(self) -> dict[str, str]:
-        """Load YouTube URL mappings from configuration file."""
-        try:
-            async with aiofiles.open(self._youtube_config_file) as f:
-                content = await f.read()
-                return json.loads(content)
-        except FileNotFoundError:
-            _logger.info(f"YouTube URL configuration file not found at {self._youtube_config_file}")
-            return {}
-        except json.JSONDecodeError:
-            _logger.warning(
-                f"Invalid JSON in YouTube URL configuration file {self._youtube_config_file}"
-            )
-            return {}
-
-    async def _enhance_schedule_with_youtube_urls(self, schedule: dict) -> dict:
-        """Add YouTube URLs to schedule events based on session codes.
-
-        Example of youtube_urls.json
-            {
-                "SXMCMY": "https://www.youtube.com/watch?v=123",
-                "9YAHXS": "https://www.youtube.com/watch?v=456",
-        }
-        """
-        youtube_mappings = await self._load_youtube_url_mappings()
-
-        if not youtube_mappings:
-            _logger.info("No YouTube URL mappings available")
-            return schedule
-
-        for day_schedule in schedule.get("days", {}).values():
-            for event in day_schedule.get("events", []):
-                session_code = event.get("code")
-                if session_code and session_code in youtube_mappings:
-                    event["youtube_url"] = youtube_mappings[session_code]
-
-        _logger.info("Added YouTube URLs to schedule.")
-        return schedule
+    def get_rooms(self) -> list[Room]:
+        """Rooms of the loaded schedule that have a Discord channel."""
+        rooms = {}
+        for sessions in (self.sessions_by_day or {}).values():
+            for session in sessions:
+                if session.room is not None and session.room.discord_id:
+                    rooms.setdefault(session.room.discord_id, session.room)
+        return list(rooms.values())
 
     async def fetch_schedule(self) -> None:
-        """Fetch schedule data from the Program API and write it to a file as backup."""
+        """Fetch schedule data from the portal API and write it to a file as backup."""
         async with self._fetch_lock:
             try:
                 async with (
@@ -113,9 +83,6 @@ class ProgramConnector:
                 return
 
             _logger.info("Schedule fetched successfully.")
-
-            # Enhance schedule with YouTube URLs
-            schedule = await self._enhance_schedule_with_youtube_urls(schedule)
 
             # write schedule to file in case the API goes down
             _logger.info(f"Writing schedule to {self._cache_file}...")

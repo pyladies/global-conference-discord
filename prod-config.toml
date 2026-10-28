@@ -19,11 +19,13 @@ pretix_cache_file = "/tmp/pretix_cache.json"
 "Volunteer" = ["Organizer", "Volunteer"]
 
 [program_notifications]
-# UTC offset in hours (e.g. 1 for CET)
-api_url = "https://programapi.conference.pyladies.com/schedule.json"
+# the conference slug comes from the PORTAL_CONFERENCE environment variable
+api_base_url = "https://portal.pyladies.com/api/v1"
 schedule_cache_file = "/tmp/schedule_cache.json"
 livestream_url_file = "livestreams.toml"
 main_notification_channel_name = "session-notifications"
+# placeholder until the conference site has session pages
+session_url = "https://conference.pyladies.com/schedule/#{slug}"
 
 # optional simulated start time for testing program notifications
 # simulated_start_time = "2024-07-10T07:30:00+02:00"
@@ -31,10 +33,6 @@ main_notification_channel_name = "session-notifications"
 # optional fast mode for faster testing of program notifications
 # will only take effect if simulated_start_time is set
 # fast_mode = true
-
-[program_notifications.rooms_to_channel_names]
-"Main Stream" = "main-stream"
-"Activities & Open Spaces" = "activities-open-spaces"
 
 [guild_statistics]
 required_role = "Organizer"

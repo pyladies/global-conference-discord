@@ -26,20 +26,6 @@ def cache_file(tmp_path):
 
 
 @pytest.fixture
-def mock_youtube_urls_file(tmp_path):
-    youtube_mappings = {
-        "TZWRJN": "https://www.youtube.com/watch?v=test-announcement",
-        "8FY9BC": "https://www.youtube.com/watch?v=test-keynote",
-    }
-    youtube_config_file = tmp_path / "youtube_urls.json"
-
-    with Path.open(youtube_config_file, "w") as f:
-        f.write(json.dumps(youtube_mappings))
-
-    return youtube_config_file
-
-
-@pytest.fixture
 async def program_connector(cache_file):
     return ProgramConnector(api_url="http://test.api/schedule", cache_file=cache_file)
 
@@ -67,9 +53,18 @@ async def test_parse_schedule(program_connector, mock_schedule):
 
     assert len(sessions_by_day) == 3
 
-    assert len(sessions_by_day[date(2024, 7, 10)]) == 4
-    assert len(sessions_by_day[date(2024, 7, 11)]) == 3
-    assert len(sessions_by_day[date(2024, 7, 12)]) == 3
+    # the break is left out
+    assert len(sessions_by_day[date(2026, 11, 7)]) == 3
+    assert len(sessions_by_day[date(2026, 11, 8)]) == 2
+    assert len(sessions_by_day[date(2026, 11, 9)]) == 1
+
+
+@pytest.mark.asyncio
+async def test_parse_schedule_empty_program(program_connector, mock_schedule):
+    mock_schedule["program"] = "internal"
+    mock_schedule["sessions"] = []
+
+    assert await program_connector.parse_schedule(mock_schedule) == {}
 
 
 @pytest.mark.asyncio
@@ -91,9 +86,9 @@ async def test_get_schedule_from_cache(program_connector, mock_schedule, cache_f
     sessions_by_day = await program_connector._get_schedule_from_cache()
 
     assert len(sessions_by_day) == 3
-    assert len(sessions_by_day[date(2024, 7, 10)]) == 4
-    assert len(sessions_by_day[date(2024, 7, 11)]) == 3
-    assert len(sessions_by_day[date(2024, 7, 12)]) == 3
+    assert len(sessions_by_day[date(2026, 11, 7)]) == 3
+    assert len(sessions_by_day[date(2026, 11, 8)]) == 2
+    assert len(sessions_by_day[date(2026, 11, 9)]) == 1
 
 
 @pytest.mark.asyncio
@@ -102,32 +97,24 @@ async def test_get_sessions_by_date(program_connector, mock_schedule_url):
 
     await program_connector.fetch_schedule()
 
-    # Test for July 10th
-    sessions = await program_connector.get_sessions_by_date(date(2024, 7, 10))
-    assert len(sessions) == 4
-    assert sessions[0].title == "Wednesday Registration & Welcome @ Forum Hall Foyer 1st Floor"
-    assert (
-        sessions[1].title
-        == "Embracing Python, AI, and Heuristics: Optimal Paths for Impactful Software"
-    )
-    assert sessions[2].title == "Learning to code in the age of AI"
+    sessions = await program_connector.get_sessions_by_date(date(2026, 11, 7))
+    assert [session.title for session in sessions] == [
+        "Opening Keynote",
+        "Testing in Python",
+        "Intro to pandas",
+    ]
 
-    # Test for July 11th
-    sessions = await program_connector.get_sessions_by_date(date(2024, 7, 11))
-    assert len(sessions) == 3
-    assert sessions[0].title == "Thursday Registration & Welcome @ Forum Hall Foyer 1st Floor"
-    assert sessions[1].title == "Why should we all be hyped about inclusive leadership?"
-    assert sessions[2].title == "Rapid Prototyping & Proof of Concepts: Django is all we need"
+    sessions = await program_connector.get_sessions_by_date(date(2026, 11, 8))
+    assert [session.title for session in sessions] == [
+        "Packaging Python",
+        "Late Night Lightning Talks",
+    ]
 
-    # Test for July 12th
-    sessions = await program_connector.get_sessions_by_date(date(2024, 7, 12))
-    assert len(sessions) == 3
-    assert sessions[0].title == "Friday Registration & Welcome @ Forum Hall Foyer 1st Floor"
-    assert sessions[1].title == "Healthy code for healthy teams (or the other way around)"
-    assert sessions[2].title == "Insights and Experiences of Packaging Python Binary Extensions"
+    sessions = await program_connector.get_sessions_by_date(date(2026, 11, 9))
+    assert [session.title for session in sessions] == ["Closing"]
 
     # Test for a day with no sessions
-    sessions = await program_connector.get_sessions_by_date(date(2024, 7, 13))
+    sessions = await program_connector.get_sessions_by_date(date(2026, 11, 10))
     assert len(sessions) == 0
 
 
@@ -137,39 +124,57 @@ async def test_get_upcoming_sessions(program_connector, mock_schedule_url):
 
     await program_connector.fetch_schedule()
 
-    # Please make sure all the sessions have UTC+0 timezone
-
-    # Test with a simulated time in 5 minutes range before a session
-    program_connector._simulated_start_time = datetime(2024, 7, 10, 7, 58, 0, tzinfo=UTC)
     program_connector._real_start_time = datetime.now(tz=UTC)
     program_connector._time_multiplier = 1
 
+    # Test with a simulated time in 5 minutes range before a session in all rooms
+    program_connector._simulated_start_time = datetime(2026, 11, 7, 13, 57, 0, tzinfo=UTC)
     upcoming_sessions = await program_connector.get_upcoming_sessions()
-    assert len(upcoming_sessions) == 1
-    assert (
-        upcoming_sessions[0].title
-        == "Wednesday Registration & Welcome @ Forum Hall Foyer 1st Floor"
-    )
+    assert [session.title for session in upcoming_sessions] == ["Opening Keynote"]
+    assert upcoming_sessions[0].room is None
 
     # Test with a simulated time in 5 minutes range where there are 2 upcoming sessions
-    program_connector._simulated_start_time = datetime(2024, 7, 10, 10, 43, 0, tzinfo=UTC)
+    program_connector._simulated_start_time = datetime(2026, 11, 7, 14, 41, 0, tzinfo=UTC)
     upcoming_sessions = await program_connector.get_upcoming_sessions()
     assert len(upcoming_sessions) == 2
 
     # Test with a simulated time before any session in the mock schedule
-    program_connector._simulated_start_time = datetime(2024, 7, 10, 7, 0, 0, tzinfo=UTC)
+    program_connector._simulated_start_time = datetime(2026, 11, 7, 13, 0, 0, tzinfo=UTC)
     upcoming_sessions = await program_connector.get_upcoming_sessions()
     assert len(upcoming_sessions) == 0
 
     # Test with a simulated time after all sessions in the mock schedule
-    program_connector._simulated_start_time = datetime(2024, 7, 11, 11, 20, 0, tzinfo=UTC)
+    program_connector._simulated_start_time = datetime(2026, 11, 9, 11, 0, 0, tzinfo=UTC)
     upcoming_sessions = await program_connector.get_upcoming_sessions()
     assert len(upcoming_sessions) == 0
 
     # Test with a simulated time in 5 minutes range before a break
-    program_connector._simulated_start_time = datetime(2024, 7, 12, 10, 13, 0, tzinfo=UTC)
+    program_connector._simulated_start_time = datetime(2026, 11, 7, 14, 26, 0, tzinfo=UTC)
     upcoming_sessions = await program_connector.get_upcoming_sessions()
     assert len(upcoming_sessions) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_rooms(program_connector, mock_schedule):
+    assert program_connector.get_rooms() == []
+
+    program_connector.sessions_by_day = await program_connector.parse_schedule(mock_schedule)
+
+    rooms = program_connector.get_rooms()
+    assert [room.name for room in rooms] == ["Main Stream", "Activities & Open Spaces"]
+    assert rooms[0].discord_id == "1253767145725235229"
+
+
+@pytest.mark.asyncio
+async def test_get_rooms_skips_rooms_without_discord_id(program_connector, mock_schedule):
+    for session in mock_schedule["sessions"]:
+        room = session["slot"]["room"]
+        if room and room["name"] == "Main Stream":
+            room["discord_id"] = None
+
+    program_connector.sessions_by_day = await program_connector.parse_schedule(mock_schedule)
+
+    assert [room.name for room in program_connector.get_rooms()] == ["Activities & Open Spaces"]
 
 
 @pytest.mark.asyncio
@@ -194,13 +199,13 @@ async def test_fetch_schedule_error_handling(
 
 @pytest.mark.asyncio
 async def test_get_sessions_by_date_with_empty_schedule(program_connector):
-    sessions = await program_connector.get_sessions_by_date(date(2024, 7, 10))
+    sessions = await program_connector.get_sessions_by_date(date(2026, 11, 7))
     assert len(sessions) == 0
 
 
 @pytest.mark.asyncio
 async def test_get_now_with_simulation(program_connector):
-    simulated_start_time = datetime(2024, 7, 10, 8, 0, 0, tzinfo=UTC)
+    simulated_start_time = datetime(2026, 11, 7, 14, 0, 0, tzinfo=UTC)
     program_connector._simulated_start_time = simulated_start_time
     program_connector._real_start_time = datetime.now(tz=UTC)
     program_connector._time_multiplier = 60
@@ -219,33 +224,3 @@ async def test_get_now_without_simulation(program_connector):
     await asyncio.sleep(0.001)
 
     assert datetime.now(tz=UTC) > now
-
-
-@pytest.mark.asyncio
-async def test_enhance_schedule_with_youtube_urls(
-    program_connector, mock_schedule, mock_youtube_urls_file
-):
-    program_connector._youtube_config_file = mock_youtube_urls_file
-
-    # Enhance the schedule
-    enhanced_schedule = await program_connector._enhance_schedule_with_youtube_urls(mock_schedule)
-    sessions_by_day = await program_connector.parse_schedule(enhanced_schedule)
-
-    # Check that the YouTube URLs have been added correctly
-    july_10_sessions = sessions_by_day[date(2024, 7, 10)]
-    assert july_10_sessions[0].youtube_url == "https://www.youtube.com/watch?v=test-announcement"
-    assert july_10_sessions[1].youtube_url is None
-
-
-@pytest.mark.asyncio
-async def test_enhance_schedule_with_youtube_urls_no_config(program_connector, mock_schedule):
-    program_connector._youtube_config_file = Path("non_existent_file.json")
-
-    # Enhance the schedule
-    enhanced_schedule = await program_connector._enhance_schedule_with_youtube_urls(mock_schedule)
-    sessions_by_day = await program_connector.parse_schedule(enhanced_schedule)
-
-    # Check that no YouTube URLs have been added
-    for day_sessions in sessions_by_day.values():
-        for session in day_sessions:
-            assert session.youtube_url is None

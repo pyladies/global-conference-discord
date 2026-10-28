@@ -49,10 +49,36 @@ async def run_bot(config: Config, auth_token: str) -> None:
     async with commands.Bot(intents=intents, command_prefix="$") as bot:
         await bot.add_cog(PingCog(bot))
         await bot.add_cog(RegistrationCog(bot, config.registration))
-        await bot.add_cog(ProgramNotificationsCog(bot, config.program_notifications))
+        conference = os.environ.get("PORTAL_CONFERENCE")
+        if conference:
+            await bot.add_cog(
+                ProgramNotificationsCog(
+                    bot,
+                    config.program_notifications,
+                    conference,
+                    refresh_minutes=_program_refresh_minutes(),
+                )
+            )
+        else:
+            _logger.warning("PORTAL_CONFERENCE is not set, program notifications are off")
         await bot.add_cog(GuildStatisticsCog(bot, config.guild_statistics))
 
         await bot.start(auth_token)
+
+
+def _program_refresh_minutes() -> float:
+    """Minutes between program fetches from the portal, from PROGRAM_REFRESH_MINUTES."""
+    value = os.environ.get("PROGRAM_REFRESH_MINUTES", "1")
+    try:
+        minutes = float(value)
+    except ValueError:
+        minutes = 0
+    if minutes <= 0:
+        raise RuntimeError(
+            "Environment variable 'PROGRAM_REFRESH_MINUTES' must be a positive number, "
+            f"not {value!r}"
+        )
+    return minutes
 
 
 def main() -> None:
