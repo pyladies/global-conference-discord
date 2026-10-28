@@ -86,8 +86,7 @@ def upcoming(cog, monkeypatch, *slugs):
 
 def test_api_url_from_conference(cog):
     assert (
-        cog.program_connector._api_url
-        == "https://portal.example/api/v1/pyladiescon-2026/sessions/"
+        cog.program_connector._api_url == "https://portal.example/api/v1/pyladiescon-2026/sessions/"
     )
 
 
